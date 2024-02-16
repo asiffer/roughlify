@@ -1,11 +1,15 @@
 {
   "name": "roughlify",
   "description": "Make your SVG rough",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Alban Siffer"
   },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/asiffer/roughlify.git"
+  },
   "module": "dist/roughlify.js",
   "main": "dist/roughlify.js",
   "types": "dist/roughlify.d.ts",
@@ -23,7 +27,9 @@
     "build:cli": "bun build src/cli.ts --target=node --minimize --outfile dist/roughlify.cli.js",
     "build:lib": "bun build src/roughlify.ts --target=node --minimize --outdir dist/",
     "build": "bun run build:lib && bun run build:types && bun run build:cli",
-    "postbuild:cli": "sed -i '1 i #!/usr/bin/env node' dist/roughlify.cli.js && chmod +x dist/roughlify.cli.js",
+    "postbuild:cli": "bun run chmod:cli",
+    "prechmod:cli": "sed -i 's,var syncWorkerFile.*$,var syncWorkerFile = __require.resolve ? __require.resolve(\"jsdom/lib/jsdom/living/xhr/xhr-sync-worker.js\") : null;,g' dist/roughlify.cli.js",
+    "chmod:cli": "sed -i '1 i #!/usr/bin/env node' dist/roughlify.cli.js && chmod +x dist/roughlify.cli.js",
     "clean": "rm -rf dist/"
   },
   "devDependencies": {
