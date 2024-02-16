@@ -1,0 +1,43 @@
+{
+  "name": "roughlify",
+  "description": "Make your SVG rough",
+  "version": "0.1.0",
+  "author": {
+    "name": "Alban Siffer"
+  },
+  "license": "MIT",
+  "module": "dist/roughlify.js",
+  "main": "dist/roughlify.js",
+  "types": "dist/roughlify.d.ts",
+  "files": [
+    "dist/roughlify.js",
+    "dist/roughlify.cli.js",
+    "dist/roughlify.d.ts"
+  ],
+  "type": "module",
+  "bin": {
+    "roughlify": "dist/roughlify.cli.js"
+  },
+  "scripts": {
+    "build:types": "bun run tsc",
+    "build:cli": "bun build src/cli.ts --target=node --minimize --outfile dist/roughlify.cli.js",
+    "build:lib": "bun build src/roughlify.ts --target=node --minimize --outdir dist/",
+    "build": "bun run build:lib && bun run build:types && bun run build:cli",
+    "postbuild:cli": "sed -i '1 i #!/usr/bin/env node' dist/roughlify.cli.js && chmod +x dist/roughlify.cli.js",
+    "clean": "rm -rf dist/"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.6",
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.0.0",
+    "jsdom": "^24.0.0",
+    "prettier": "^3.2.5",
+    "roughjs": "^4.6.6"
+  }
+}
