@@ -7,6 +7,10 @@ Make your SVG rough ([❤️ rough.js](https://roughjs.com/)).
 <p align="center">Example with <a href="https://heroicons.com/">heroicons</a></p>
 <p></p>
 
+## Online app
+
+For an online version of `roughlify`, visit [https://asiffer.github.io/roughlify/](https://asiffer.github.io/roughlify/)!
+
 ## Installation
 
 ```shell

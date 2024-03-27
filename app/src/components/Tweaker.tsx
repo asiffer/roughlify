@@ -12,6 +12,7 @@ import { Separator } from "./ui/separator";
 import { Slider } from "./ui/slider";
 
 export interface TweakerProps {
+  initialValue?: Options;
   onChange?: (options: Options) => void;
 }
 
@@ -28,7 +29,9 @@ const defaultOptions = {
 } as Options;
 
 export const Tweaker = forwardRef((props: TweakerProps, ref: Ref<any>) => {
-  const [options, setOptions] = useState<Options>({ ...defaultOptions });
+  const [options, setOptions] = useState<Options>(
+    props.initialValue ? { ...props.initialValue } : { ...defaultOptions }
+  );
   const inputRef = useRef<HTMLDivElement>(null);
 
   useImperativeHandle(

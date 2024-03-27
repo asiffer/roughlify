@@ -2,7 +2,7 @@ import { html } from "@codemirror/lang-html";
 import { whiteLight } from "@uiw/codemirror-theme-white";
 import CodeMirror from "@uiw/react-codemirror";
 import DOMPurify from "dompurify";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type Options } from "roughjs/bin/core";
 import { roughlify } from "../lib/roughlify";
 import { Tweaker } from "./Tweaker";
@@ -11,9 +11,22 @@ import { Input } from "./ui/input";
 
 const extensions = [html()];
 
-const example = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-<path stroke-linecap="round" stroke-linejoin="round" d="M21 10.5h.375c.621 0 1.125.504 1.125 1.125v2.25c0 .621-.504 1.125-1.125 1.125H21M4.5 10.5h6.75V15H4.5v-4.5ZM3.75 18h15A2.25 2.25 0 0 0 21 15.75v-6a2.25 2.25 0 0 0-2.25-2.25h-15A2.25 2.25 0 0 0 1.5 9.75v6A2.25 2.25 0 0 0 3.75 18Z" />
-</svg>`;
+// demo using 'heart' from heroicons
+const demo = {
+  svg: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+</svg>`,
+  options: {
+    roughness: 0.3,
+    bowing: 1,
+    stroke: "#000000ff",
+    strokeWidth: 0.6,
+    fillStyle: "cross-hatch",
+    fill: "#ef4444ff",
+    fillWeight: 0.3,
+    gap: 2.4,
+  } as Options,
+};
 
 export const Viewer = () => {
   const inputSvgContainerRef = useRef<HTMLDivElement>(null);
@@ -23,13 +36,20 @@ export const Viewer = () => {
 
   const urlInputRef = useRef<HTMLInputElement>(null);
 
-  const [inputSVG, setInputSVG] = useState(example);
+  const [inputSVG, setInputSVG] = useState(demo.svg);
+  const [options, setOptions] = useState<Options>(demo.options);
+
   const [outputSVG, setOutputSVG] = useState("");
-  const [options, setOptions] = useState<Options>({});
+
+  useEffect(() => {
+    console.log("use effect");
+    update(inputSVG);
+  }, [inputSvgContainerRef, outputSvgRef]);
 
   const updateOutput = (opts?: Options) => {
     // @ts-ignore
     const node = inputSvgContainerRef.current.querySelector("svg");
+    console.log(node);
     if (node && outputSvgRef.current) {
       outputSvgRef.current.innerHTML = "";
       roughlify(node, outputSvgRef.current, opts || options);
@@ -166,6 +186,7 @@ export const Viewer = () => {
         </div>
         <Tweaker
           ref={tweakerRef}
+          initialValue={options}
           onChange={(opts) => {
             console.log(opts);
             setOptions({ ...opts });
