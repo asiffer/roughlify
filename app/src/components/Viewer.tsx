@@ -4,7 +4,6 @@ import CodeMirror from "@uiw/react-codemirror";
 import DOMPurify from "dompurify";
 import { useEffect, useRef, useState } from "react";
 import { type Options } from "roughjs/bin/core";
-// import { roughlify } from "../lib/roughlify";
 import { roughlify } from "roughlify";
 import { Tweaker } from "./Tweaker";
 import { Button } from "./ui/button";
@@ -48,12 +47,18 @@ export const Viewer = () => {
 
   const updateOutput = (opts?: Options) => {
     // @ts-ignore
-    const node = inputSvgContainerRef.current.querySelector("svg");
-    console.log(node);
-    if (node && outputSvgRef.current) {
-      outputSvgRef.current.innerHTML = "";
-      roughlify(node, outputSvgRef.current, opts || options);
-      setOutputSVG(outputSvgRef.current.outerHTML);
+    if (inputSvgContainerRef.current) {
+      const node = inputSvgContainerRef.current.querySelector("svg");
+      console.log(node);
+      if (node && outputSvgRef.current) {
+        outputSvgRef.current.innerHTML = "";
+        roughlify({
+          svgInput: node,
+          svgOutput: outputSvgRef.current,
+          options: opts || options,
+        });
+        setOutputSVG(outputSvgRef.current.outerHTML);
+      }
     }
   };
 

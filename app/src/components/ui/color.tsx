@@ -31,11 +31,13 @@ const concatColorAlpha = (fc: FullColor): string => {
 export interface AlphaColorPickerProps {
   color: string;
   onChange: (color: string) => void;
+  disabled: boolean;
 }
 
 export const AlphaColorPicker = ({
   color,
   onChange,
+  disabled = false,
 }: AlphaColorPickerProps) => {
   const [fullColor, setFullColor] = useState<FullColor>(
     extractColorAlpha(color)
@@ -60,6 +62,7 @@ export const AlphaColorPicker = ({
   return (
     <div className="w-full flex flex-row gap-5 items-center justify-start">
       <input
+        disabled={disabled}
         className="rounded h-6 border-none outline-none shadow-none"
         type="color"
         value={fullColor.color}
@@ -70,6 +73,7 @@ export const AlphaColorPicker = ({
         }}
       />
       <GradientSlider
+        disabled={disabled}
         color={fullColor.color}
         min={0}
         max={255}
