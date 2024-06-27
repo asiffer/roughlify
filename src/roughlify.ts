@@ -1,5 +1,3 @@
-import { JSDOM } from "jsdom";
-import * as prettier from "prettier";
 import rough from "roughjs";
 import { Options } from "roughjs/bin/core";
 import { Point } from "roughjs/bin/geometry";
@@ -25,10 +23,6 @@ const extract = (el: Element, camelize: boolean = false) => {
     out[camelize ? toCamel(attr.nodeName) : attr.nodeName] = attr.nodeValue;
   }
   return out;
-};
-
-export const buildDocument = (raw: string) => {
-  return new JSDOM(raw).window.document;
 };
 
 const walk = (node: Node, func: (element: Node) => void) => {
@@ -216,61 +210,33 @@ const nodeMapper: Readonly<{ [key: string]: Roughlifier }> = {
 
 export interface RoughlifyArgs {
   svgInput: SVGSVGElement;
-  svgOutput?: SVGSVGElement;
+  svgOutput: SVGSVGElement;
   options?: Options;
 }
 
 export const roughlify = ({
   svgInput,
-  svgOutput = undefined,
+  svgOutput,
   options = {},
 }: RoughlifyArgs) => {
-  // init a fake document if output is not provided
-  const svg = svgOutput
-    ? svgOutput
-    : new JSDOM().window.document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "svg"
-      );
-
   // copy attributes
   Object.entries(extract(svgInput)).forEach(([key, value]) => {
-    svg.setAttribute(key, value);
+    svgOutput.setAttribute(key, value);
   });
 
   // bind roughjs to this element
-  const rc = rough.svg(svg);
+  const rc = rough.svg(svgOutput);
 
   // callback function
   const fun = (node: Node) => {
     const tag = node.nodeName.toLowerCase();
     if (tag in nodeMapper) {
       const mapper = nodeMapper[tag];
-      mapper(node, rc, svg, options);
+      mapper(node, rc, svgOutput, options);
     }
   };
 
   // roughlify all objects
   walk(svgInput, fun);
-  return svg;
-};
-
-export const roughlifyAll = (
-  doc: Document,
-  options: Options,
-  bodyOnly: boolean = false
-) => {
-  doc.querySelectorAll("svg").forEach((svg) => {
-    svg.parentElement?.replaceChild(
-      roughlify({ svgInput: svg, options: options }),
-      svg
-    );
-  });
-  return prettier.format(
-    bodyOnly ? doc.body.innerHTML : doc.documentElement.outerHTML,
-    {
-      parser: "html",
-      bracketSameLine: true,
-    }
-  );
+  return svgOutput;
 };

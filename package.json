@@ -1,7 +1,7 @@
 {
   "name": "roughlify",
   "description": "Make your SVG rough",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": {
     "name": "Alban Siffer"
   },
@@ -25,7 +25,7 @@
   "scripts": {
     "build:types": "bun run tsc",
     "build:cli": "bun build src/cli.ts --target=node --minimize --outfile dist/roughlify.cli.js",
-    "build:lib": "bun build src/roughlify.ts --target=node --minimize --outdir dist/",
+    "build:lib": "bun build src/roughlify.ts --target=browser --minimize --outdir dist/",
     "build": "bun run build:lib && bun run build:types && bun run build:cli",
     "postbuild:cli": "bun run chmod:cli",
     "prechmod:cli": "sed -i 's,var syncWorkerFile.*$,var syncWorkerFile = __require.resolve ? __require.resolve(\"jsdom/lib/jsdom/living/xhr/xhr-sync-worker.js\") : null;,g' dist/roughlify.cli.js",

@@ -1,9 +1,11 @@
 import chalk from "chalk";
 import { Command, Option } from "commander";
+import { JSDOM } from "jsdom";
 import { readFile, writeFile } from "node:fs/promises";
+import * as prettier from "prettier";
 import { Options } from "roughjs/bin/core";
 import { RoughGenerator } from "roughjs/bin/generator";
-import { buildDocument, roughlifyAll } from "./roughlify";
+import { roughlify } from "./roughlify";
 
 const error = (msg: string) => console.log(chalk.bold.red(msg));
 const warning = (msg: string) => console.log(chalk.yellow(msg));
@@ -12,6 +14,34 @@ const info = (msg: string) => console.log(chalk.blue(msg));
 const panic = (msg: string) => {
   error(msg);
   process.exit();
+};
+
+export const buildDocument = (raw: string) => {
+  return new JSDOM(raw).window.document;
+};
+
+const roughlifyAll = (
+  doc: Document,
+  options: Options,
+  bodyOnly: boolean = false
+) => {
+  doc.querySelectorAll("svg").forEach((svg) => {
+    const svgOutput = new JSDOM().window.document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "svg"
+    );
+    svg.parentElement?.replaceChild(
+      roughlify({ svgInput: svg, svgOutput: svgOutput, options: options }),
+      svg
+    );
+  });
+  return prettier.format(
+    bodyOnly ? doc.body.innerHTML : doc.documentElement.outerHTML,
+    {
+      parser: "html",
+      bracketSameLine: true,
+    }
+  );
 };
 
 const toKebab = (s: string) =>
