@@ -3,6 +3,7 @@ import * as prettier from "prettier";
 import rough from "roughjs";
 import { Options } from "roughjs/bin/core";
 import { Point } from "roughjs/bin/geometry";
+import { RoughSVG } from "roughjs/bin/svg";
 
 const parseListOfPoints = (value: string, _?: any) => {
   return value
@@ -30,6 +31,131 @@ export const buildDocument = (raw: string) => {
   return new JSDOM(raw).window.document;
 };
 
+const walk = (node: Node, func: (element: Node) => void) => {
+  func(node);
+  let nextNode = node.firstChild;
+  while (nextNode) {
+    walk(nextNode, func);
+    nextNode = nextNode.nextSibling;
+  }
+};
+
+const roughlifyPath = (
+  element: SVGPathElement,
+  rc: RoughSVG,
+  svg: SVGElement,
+  options: Options
+) => {
+  const { d, ...attrs } = extract(element, true);
+  if (d) {
+    const node = rc.path(d, { ...attrs, ...options });
+    svg.appendChild(node);
+  }
+};
+
+const roughlifyLine = (
+  element: SVGLineElement,
+  rc: RoughSVG,
+  svg: SVGElement,
+  options: Options
+) => {
+  const { x1, y1, x2, y2, ...attrs } = extract(element, true);
+  if (x1 && y1 && x2 && y2) {
+    const node = rc.line(+x1, +y1, +x2, +y2, { ...attrs, ...options });
+    svg.appendChild(node);
+  }
+};
+
+const roughlifyCircle = (
+  element: SVGCircleElement,
+  rc: RoughSVG,
+  svg: SVGElement,
+  options: Options
+) => {
+  const { cx, cy, r, ...attrs } = extract(element, true);
+  if (cx && cy && r) {
+    const node = rc.circle(+cx, +cy, +r * 2, { ...attrs, ...options });
+    svg.appendChild(node);
+  }
+};
+
+const roughlifyRect = (
+  element: SVGRectElement,
+  rc: RoughSVG,
+  svg: SVGElement,
+  options: Options
+) => {
+  const { x = "0", y = "0", width, height, ...attrs } = extract(element, true);
+  if (x && y && width && height) {
+    const node = rc.rectangle(+x, +y, +width, +height, {
+      ...attrs,
+      ...options,
+    });
+    svg.appendChild(node);
+  }
+};
+
+const roughlifyEllipse = (
+  element: SVGEllipseElement,
+  rc: RoughSVG,
+  svg: SVGElement,
+  options: Options
+) => {
+  const { cx, cy, rx, ry, ...attrs } = extract(element, true);
+  if (cx && cy && rx && ry) {
+    const node = rc.ellipse(+cx, +cy, 2 * +rx, 2 * +ry, {
+      ...attrs,
+      ...options,
+    });
+    svg.appendChild(node);
+  }
+};
+
+const roughlifyPolygon = (
+  element: SVGPolygonElement,
+  rc: RoughSVG,
+  svg: SVGElement,
+  options: Options
+) => {
+  const { points, ...attrs } = extract(element, true);
+  if (points) {
+    const pts: Point[] = parseListOfPoints(points);
+    const node = rc.polygon(pts, { ...attrs, ...options });
+    svg.appendChild(node);
+  }
+};
+
+const roughlifyPolyline = (
+  element: SVGPolylineElement,
+  rc: RoughSVG,
+  svg: SVGElement,
+  options: Options
+) => {
+  const { points, ...attrs } = extract(element, true);
+  if (points) {
+    const pts: Point[] = parseListOfPoints(points);
+    const node = rc.linearPath(pts, { ...attrs, ...options });
+    svg.appendChild(node);
+  }
+};
+
+type Roughlifier = (
+  element: any,
+  rc: RoughSVG,
+  svg: SVGElement,
+  options: Options
+) => void;
+
+const nodeMapper: Readonly<{ [key: string]: Roughlifier }> = {
+  path: roughlifyPath,
+  line: roughlifyLine,
+  circle: roughlifyCircle,
+  rect: roughlifyRect,
+  ellipse: roughlifyEllipse,
+  polygon: roughlifyPolygon,
+  polyline: roughlifyPolyline,
+};
+
 export const roughlify = (svgElement: SVGSVGElement, options: Options = {}) => {
   // init a fake document
   const outputDocument = new JSDOM().window.document;
@@ -46,72 +172,17 @@ export const roughlify = (svgElement: SVGSVGElement, options: Options = {}) => {
   // bind roughjs to this element
   const rc = rough.svg(svg);
 
-  // now roughlify every object
-  // path
-  svgElement.querySelectorAll("path")?.forEach((p) => {
-    const { d, ...attrs } = extract(p, true);
-    if (d) {
-      const node = rc.path(d, { ...attrs, ...options });
-      svg.appendChild(node);
+  // callback function
+  const fun = (node: Node) => {
+    const tag = node.nodeName.toLowerCase();
+    if (tag in nodeMapper) {
+      const mapper = nodeMapper[tag];
+      mapper(node, rc, svg, options);
     }
-  });
-  // line
-  svgElement.querySelectorAll("line")?.forEach((l) => {
-    const { x1, y1, x2, y2, ...attrs } = extract(l, true);
-    if (x1 && y1 && x2 && y2) {
-      const node = rc.line(+x1, +y1, +x2, +y2, { ...attrs, ...options });
-      svg.appendChild(node);
-    }
-  });
-  // circle
-  svgElement.querySelectorAll("circle")?.forEach((c) => {
-    const { cx, cy, r, ...attrs } = extract(c, true);
-    if (cx && cy && r) {
-      const node = rc.circle(+cx, +cy, +r * 2, { ...attrs, ...options });
-      svg.appendChild(node);
-    }
-  });
-  // rectangle
-  svgElement.querySelectorAll("rect")?.forEach((r) => {
-    const { x, y, width, height, ...attrs } = extract(r, true);
-    if (x && y && width && height) {
-      const node = rc.rectangle(+x, +y, +width, +height, {
-        ...attrs,
-        ...options,
-      });
-      svg.appendChild(node);
-    }
-  });
-  // ellipse
-  svgElement.querySelectorAll("ellipse")?.forEach((e) => {
-    const { cx, cy, rx, ry, ...attrs } = extract(e, true);
-    if (cx && cy && rx && ry) {
-      const node = rc.ellipse(+cx, +cy, 2 * +rx, 2 * +ry, {
-        ...attrs,
-        ...options,
-      });
-      svg.appendChild(node);
-    }
-  });
-  // polygon
-  svgElement.querySelectorAll("polygon")?.forEach((e) => {
-    const { points, ...attrs } = extract(e, true);
-    if (points) {
-      const pts: Point[] = parseListOfPoints(points);
-      const node = rc.polygon(pts, { ...attrs, ...options });
-      svg.appendChild(node);
-    }
-  });
-  // polyline
-  svgElement.querySelectorAll("polyline")?.forEach((e) => {
-    const { points, ...attrs } = extract(e, true);
-    if (points) {
-      const pts: Point[] = parseListOfPoints(points);
-      const node = rc.linearPath(pts, { ...attrs, ...options });
-      svg.appendChild(node);
-    }
-  });
+  };
 
+  // roughlify all objects
+  walk(svgElement, fun);
   return svg;
 };
 
