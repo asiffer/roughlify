@@ -22,7 +22,7 @@ const toKebab = (s: string) =>
 
 const parseListOfNumbers = (value: string, _?: any) => {
   return value
-    .replaceAll(/[ ]+/g, "")
+    .replace(/[ ]+/g, "")
     .split(",")
     .map((p: string) => +p);
 };
@@ -136,6 +136,12 @@ program.option(
   `--${toKebab("strokeLineOffset")} <strokeLineOffset>`,
   "",
   parseFloat
+);
+
+program.addOption(
+  new Option(`--${toKebab("simplification")} <${"simplification"}>`)
+    .default(0)
+    .argParser(parseFloat)
 );
 
 program.options

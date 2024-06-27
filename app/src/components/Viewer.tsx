@@ -4,11 +4,11 @@ import CodeMirror from "@uiw/react-codemirror";
 import DOMPurify from "dompurify";
 import { useEffect, useRef, useState } from "react";
 import { type Options } from "roughjs/bin/core";
-import { roughlify } from "../lib/roughlify";
+// import { roughlify } from "../lib/roughlify";
+import { roughlify } from "roughlify";
 import { Tweaker } from "./Tweaker";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-
 const extensions = [html()];
 
 // demo using 'heart' from heroicons

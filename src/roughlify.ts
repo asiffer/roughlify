@@ -79,19 +79,77 @@ const roughlifyCircle = (
   }
 };
 
+const rectToPath = (
+  x: any,
+  y: any,
+  width: any,
+  height: any,
+  rx: any,
+  ry: any
+) => {
+  x = +x;
+  y = +y;
+  height = +height;
+  width = +width;
+
+  // If a properly specified value is provided for rx
+  // but not for ry (or the opposite), then the browser
+  // will consider the missing value equal to the defined one.
+  if (rx && ry === undefined) {
+    ry = rx;
+  }
+  if (ry && rx === undefined) {
+    rx = ry;
+  }
+
+  if (typeof rx === "string" && rx.endsWith("%")) {
+    rx = (+rx.replaceAll("%", "") * width) / 100.0;
+  } else {
+    rx = +rx;
+  }
+
+  if (typeof ry === "string" && ry.endsWith("%")) {
+    ry = (+ry.replaceAll("%", "") * height) / 100.0;
+  } else {
+    ry = +ry;
+  }
+
+  let d = `M ${x + rx} ${y} `;
+  d += `L ${x + width - rx} ${y} A ${rx} ${ry} 0 0 1 ${x + width} ${y + ry} `;
+  d += `L ${x + width} ${y + height - ry} A ${rx} ${ry} 0 0 1 ${x + width - rx} ${y + height} `;
+  d += `L ${x + rx} ${y + height} A ${rx} ${ry} 0 0 1 ${x} ${y + height - ry} `;
+  d += `L ${x} ${y + ry} A ${rx} ${ry} 0 0 1 ${x + rx} ${y}`;
+  return d;
+};
+
 const roughlifyRect = (
   element: SVGRectElement,
   rc: RoughSVG,
   svg: SVGElement,
   options: Options
 ) => {
-  const { x = "0", y = "0", width, height, ...attrs } = extract(element, true);
+  let {
+    x = "0",
+    y = "0",
+    width,
+    height,
+    rx,
+    ry,
+    ...attrs
+  } = extract(element, true);
   if (x && y && width && height) {
-    const node = rc.rectangle(+x, +y, +width, +height, {
-      ...attrs,
-      ...options,
-    });
-    svg.appendChild(node);
+    if (rx || ry) {
+      // rounded corner, turn it into a path
+      const d = rectToPath(x, y, width, height, rx, ry);
+      const node = rc.path(d, { ...attrs, ...options });
+      svg.appendChild(node);
+    } else {
+      const node = rc.rectangle(+x, +y, +width, +height, {
+        ...attrs,
+        ...options,
+      });
+      svg.appendChild(node);
+    }
   }
 };
 
@@ -156,16 +214,27 @@ const nodeMapper: Readonly<{ [key: string]: Roughlifier }> = {
   polyline: roughlifyPolyline,
 };
 
-export const roughlify = (svgElement: SVGSVGElement, options: Options = {}) => {
-  // init a fake document
-  const outputDocument = new JSDOM().window.document;
-  // create a new svg in outputDOM
-  const svg = outputDocument.createElementNS(
-    "http://www.w3.org/2000/svg",
-    "svg"
-  );
+export interface RoughlifyArgs {
+  svgInput: SVGSVGElement;
+  svgOutput?: SVGSVGElement;
+  options?: Options;
+}
+
+export const roughlify = ({
+  svgInput,
+  svgOutput = undefined,
+  options = {},
+}: RoughlifyArgs) => {
+  // init a fake document if output is not provided
+  const svg = svgOutput
+    ? svgOutput
+    : new JSDOM().window.document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "svg"
+      );
+
   // copy attributes
-  Object.entries(extract(svgElement)).forEach(([key, value]) => {
+  Object.entries(extract(svgInput)).forEach(([key, value]) => {
     svg.setAttribute(key, value);
   });
 
@@ -182,7 +251,7 @@ export const roughlify = (svgElement: SVGSVGElement, options: Options = {}) => {
   };
 
   // roughlify all objects
-  walk(svgElement, fun);
+  walk(svgInput, fun);
   return svg;
 };
 
@@ -192,7 +261,10 @@ export const roughlifyAll = (
   bodyOnly: boolean = false
 ) => {
   doc.querySelectorAll("svg").forEach((svg) => {
-    svg.parentElement?.replaceChild(roughlify(svg, options), svg);
+    svg.parentElement?.replaceChild(
+      roughlify({ svgInput: svg, options: options }),
+      svg
+    );
   });
   return prettier.format(
     bodyOnly ? doc.body.innerHTML : doc.documentElement.outerHTML,
